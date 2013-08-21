@@ -79,8 +79,6 @@
 		},
 
 		show: function( event ) {
-			// update selected item whenever picker is shown
-			//this.reset();
 			
 			this.picker.show();
 			this.place();
@@ -140,7 +138,7 @@
 		},
 		
 		/* 
-		 * Reset selection in suggestion list
+		 * Reset selection to default in suggestion list
 		 */
 		reset: function() {
 			var val = ( this.element.val() ).replace(/\s+/, ' '), 
