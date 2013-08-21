@@ -79,6 +79,9 @@
 		},
 
 		show: function( event ) {
+			// update selected item whenever picker is shown
+			//this.reset();
+			
 			this.picker.show();
 			this.place();
 			$( window ).on( 'resize.suggestlist', $.proxy( this.place, this ) );
@@ -135,7 +138,36 @@
 			this.element.val( this.picker.find( 'li.suggestlist-selected' ).text() );
 			this.hide();
 		},
-
+		
+		/* 
+		 * Reset selection in suggestion list
+		 */
+		reset: function() {
+			var val = ( this.element.val() ).replace(/\s+/, ' '), 
+				$li = this.picker.find( 'li' ),
+				$selected = $li.filter( '.suggestlist-selected' ).first();
+			
+			if ( val === $selected.text() ) {
+				return;
+			}
+			
+			$selected.removeClass( 'suggestlist-selected' );
+			
+			// only first match to be highlighted in case of multiple matches
+			var selectedFlag = false;
+			this.picker.find( 'li' ).each( function( i, elem ) {
+				// a match was already found
+				if (selectedFlag) {
+					return;
+				}
+				// check if a list item starts with val
+				if ( $(elem).text().indexOf(val) === 0) {
+					$( elem ).addClass( 'suggestlist-selected' );
+					selectedFlag = true;
+				}
+			} );
+		},
+		
 		updateLi: function( event ) {
 			if ( event ) {
 				var keyVal = String.fromCharCode( event.keyCode ).toLowerCase();
@@ -143,20 +175,27 @@
 					return;
 				}
 			}
-
-			var val = $.trim( this.element.val() ).replace(/\s+/, ' '),
+			
+			var val = ( this.element.val() ).replace(/\s+/, ' '),
 				$li = this.picker.find( 'li' ),
 				$selected = $li.filter( '.suggestlist-selected' ).first();
+				
 			if ( val === $selected.text() ) {
 				return;
 			}
-			if ( $.inArray( val, this.options.list ) === -1 ) {
-				return false;
-			}
+			
 			$selected.removeClass( 'suggestlist-selected' );
+			// only first match to be highlighted in case of multiple matches
+			var selectedFlag = false;
 			this.picker.find( 'li' ).each( function( i, elem ) {
-				if ( $( elem ).text() === val ) {
+				// a match was already found
+				if (selectedFlag) {
+					return;
+				}
+				// check if a list item starts with val
+				if ( $(elem).text().indexOf(val) === 0) {
 					$( elem ).addClass( 'suggestlist-selected' );
+					selectedFlag = true;
 				}
 			} );
 			if ( event ) {
@@ -165,8 +204,10 @@
 		}
 
 	};
+	
+	
 
-	var DPGlobal ={
+	var DPGlobal = {
 		render: function( options ) {
 			var $list = $( '<ul/>' ), i;
 			$list.addClass( 'suggestlist' )
@@ -214,6 +255,13 @@
 
 	$.fn.suggestlist.defaults = {
 		list: []
+	};
+	
+	$.fn.reset = function() {
+		var $this = $( this );
+		var suggestlist = $this.data().suggestlist;
+		// reset suggestlist
+		suggestlist.reset();
 	};
 
 } ) ( jQuery );
