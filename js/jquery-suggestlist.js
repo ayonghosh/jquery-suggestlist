@@ -11,7 +11,7 @@
 			that.picker.remove();
 			that.element.off('.suggestlist').removeData( 'suggestlist' )
 		}
-
+		
 		this.picker.width( this.element.outerWidth() );
 		$( document ).on( 'mousedown.suggestlist', function ( event ) {
 			// Clicked outside the datepicker, hide it
@@ -21,19 +21,35 @@
 		});
 		if ( this.isInput ) {
 			this.element.on( {
-				'focus.suggestlist': $.proxy( this.show, this ),
+				//'focus.suggestlist': $.proxy( this.show, this ),
+				'focus.suggestlist': $.proxy( this.click, this ),	// click, since focus should also work after form reset
 				'click.suggestlist': $.proxy( this.click, this ),
 				'keydown.suggestlist': $.proxy( this.keydown, this ),
 				'keyup.suggestlist': $.proxy( this.updateLi, this )
 			} );
+			
+			// use this as a mutex, to prevent this.click() being called while it's still
+			// executing; this is to handle 'focus' and 'click' events firing simultaneously 
+			// on mouse click
+			this.clicked = false;
+			
 			this.updateLi();
 		}
 	}
 
 	Suggestlist.prototype = {
 		constructor: Suggestlist,
-
-		click: function() {
+		
+		click: function( event ) {
+			
+			// check if click is still executing
+			if (this.clicked) {
+				return;
+			}
+			// start executing click
+			this.clicked = true;
+			
+			this.reset();
 			if ( this.picker.is( ':hidden' ) ) {
 				this.show();
 			}
@@ -42,8 +58,11 @@
 		clickLi: function( event ) {
 			this.picker.find( 'li.suggestlist-selected' ).removeClass( 'suggestlist-selected' );
 			$( event.currentTarget ).addClass( 'suggestlist-selected' );
-			this.element[0].focus();
 			this.updateVal();
+			
+			this.element[0].focus();
+			// focus will cause list to show, so hide it
+			this.picker.hide();
 		},
 
 		keydown: function( event ) {
@@ -79,21 +98,28 @@
 		},
 
 		show: function( event ) {
-			// update selected item whenever picker is shown
-			//this.reset();
-			
 			this.picker.show();
 			this.place();
+			
 			$( window ).on( 'resize.suggestlist', $.proxy( this.place, this ) );
 			if ( event ) {
 				event.stopPropagation();
 				event.preventDefault();
+			}
+			// click has finished executing, ready to be called again
+			if (this.clicked) {
+				this.clicked = false;
 			}
 		},
 
 		hide: function( event ) {
 			this.picker.hide();
 			$( window ).off( 'resize', $.proxy( this.place, this ) );
+			
+			// click is ready to be called if dropdown in hidden
+			if (this.clicked) {
+				this.clicked = false;
+			}
 		},
 
 		place: function() {
@@ -142,7 +168,7 @@
 		/* 
 		 * Reset selection in suggestion list
 		 */
-		reset: function() {
+		reset: function(event) {
 			var val = ( this.element.val() ).replace(/\s+/, ' '), 
 				$li = this.picker.find( 'li' ),
 				$selected = $li.filter( '.suggestlist-selected' ).first();
@@ -161,11 +187,12 @@
 					return;
 				}
 				// check if a list item starts with val
-				if ( $(elem).text().indexOf(val) === 0) {
+				if ( $(elem).text() === val) {
 					$( elem ).addClass( 'suggestlist-selected' );
 					selectedFlag = true;
 				}
 			} );
+			
 		},
 		
 		updateLi: function( event ) {
@@ -257,11 +284,12 @@
 		list: []
 	};
 	
+	/*
 	$.fn.reset = function() {
 		var $this = $( this );
 		var suggestlist = $this.data().suggestlist;
 		// reset suggestlist
 		suggestlist.reset();
-	};
+	};*/
 
 } ) ( jQuery );
